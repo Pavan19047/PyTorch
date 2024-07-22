@@ -292,3 +292,49 @@ def download_data(source: str,
             os.remove(data_path / target_file)
     
     return image_path
+def train_step(model: torch.nn.Module,
+               data_loader: torch.utils.data.DataLoader,
+               loss_fn: torch.nn.Module,
+               optimizer: torch.optim.Optimizer,
+               accuracy_fn,
+               device: torch.device = device):
+  
+  """Performs training with a model trying to learn on data loader"""
+  train_loss, train_acc = 0, 0
+  model.train()
+  for batch, (X_train,y_train) in enumerate(data_loader):
+    X_train,y_train = X_train.to(device), y_train.to(device)
+    y_pred = model(X_train)
+    loss = loss_fn(y_pred, y_train)
+    train_loss+=loss # accumulate train loss
+    train_acc+=accuracy_fn(y_train,y_pred.argmax(dim=1)) # accumulate train accuracy
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    # if batch % 400 == 0:
+    #   print(f"Looked at {batch * len(X_train)}/{len(data_loader.dataset)} samples")
+  
+  train_loss /= len(data_loader)
+  train_acc /= len(data_loader)
+  print(f"Train loss: {train_loss:.5f} | Train acc: {train_acc:.2f}%")
+
+def test_step(model: torch.nn.Module,
+              data_loader: torch.utils.data.DataLoader,
+              loss_fn: torch.nn.Module,
+              accuracy_fn,
+              device: torch.device = device):
+  
+  """Performs testing of a model"""
+  test_loss, test_acc = 0, 0
+  model.eval()
+  with torch.inference_mode():
+    for X_test,y_test in data_loader:
+      X_test,y_test = X_test.to(device), y_test.to(device)
+      test_pred = model(X_test)
+      test_loss += loss_fn(test_pred, y_test)
+      test_acc += accuracy_fn(y_test, test_pred.argmax(dim=1))
+    test_loss /= len(data_loader)
+    test_acc /= len(data_loader)
+  
+  print(f"\nTrain Loss: {train_loss:.4f} | Test loss: {test_loss:.4f} | Test acc: {test_acc:.4f}")
