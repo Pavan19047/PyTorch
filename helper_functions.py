@@ -292,6 +292,7 @@ def download_data(source: str,
             os.remove(data_path / target_file)
     
     return image_path
+device = "cuda" if torch.cuda.is_available() else "cpu"
 def train_step(model: torch.nn.Module,
                data_loader: torch.utils.data.DataLoader,
                loss_fn: torch.nn.Module,
